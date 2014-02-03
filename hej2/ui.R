@@ -22,8 +22,8 @@ shinyUI(fluidPage(
 	hr(),
 	
 	fluidRow(
-# 		column(2, uiOutput("leftBar")),
-# 		column(8, uiOutput("myChart")),
+		column(2, uiOutput("leftBar")),
+		column(8, uiOutput("myChart")),
 # 		column(8, plotOutput("myChart")),
 		column(2)
 	)

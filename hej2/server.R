@@ -1,8 +1,6 @@
 
 shinyServer(function(input, output) {
 	
-	
-	
 	## Variable selectors (top) ----
 	
 	output$UI <- renderUI({
@@ -78,34 +76,36 @@ shinyServer(function(input, output) {
 	## Metadata selectors (left) ----
 	
 	output$leftBar <- renderUI({
-
-		if (!is.null(input$fetchScbVar)) { if (input$fetchScbVar > 0) {
-# 			print(var_data())
-			uiOutput("metaDataSelectors")
-			uiOutput("dataButton")
+		if (is.null(input$fetchScbVar)) return()
+		if (input$fetchScbVar == 0) {
+			uiList <- list(textOutput("leftText"))
 		} else {
-			return(NULL)
-		}}
+			uiList <- list(
+				uiOutput("metaDataSelectors"),
+				uiOutput("dataButton")
+			)
+		}
 		
+		do.call(tagList, uiList)
+	})
+	
+	output$leftText <- renderText({
+		'2. Select a variable above and click "Get Metadata".'
 	})
 	
 	output$metaDataSelectors <- renderUI({
-		# 		print(dims)
-		if (is.null(input$fetchScbVar)) return()
-		if (input$fetchScbVar == 0) return()
-		isolate({ dims <- var_data()$dims })
+		dims <- var_data()$dims
 		if (is.null(dims)) return()
-
 		
 		metadataSelectorList <- lapply(dims, function(i) {
 			if (i$code != "Tid") {	return(
 				bootstrapSelectInput(
 					inputId = i$code,
 					label = i$code,
-					choices = c("*", i$values),
-					subtext = c("", i$valueTexts),
-					selected = "*",
-					multiple = FALSE,
+					choices = c(i$values, "*"),
+					subtext = c(i$valueTexts, "*"),
+					selected = i$value[1],
+					multiple = TRUE,
 					options = list(
 						width = "120px"
 					)
@@ -138,39 +138,30 @@ shinyServer(function(input, output) {
 		datavar <- ifelse(input$myInput4 == "", input$myInput3, input$myInput4)
 		metadata <- scbGetMetadata(datavar)
 		dims <- scbGetDims(metadata, verbose = FALSE)
-				
+		
 		return(list(datavar=datavar, metadata=metadata, dims=dims))
 	})
 	
 	main_data <- reactive({
-			datadims <- lapply(var_data()$dims, function(i) {
+		input$fetchScbData
+		
+		isolate({
+			dims <- var_data()$dims
+			datadims <- lapply(dims, function(i) {
 				if (i$code != "Tid") {
 					return(input[[i$code]])
 				} else {
 					return(as.character(input[[i$code]][1]:input[[i$code]][2]))
 				}
 			})
-			names(datadims) <- unlist(lapply(var_data()$dims, function(i) i$code))
-			# 		print(datadims)
-# 			print(paste0("URL: ", var_data()$metadata$URL))
-# 			print(datadims)
+			names(datadims) <- unlist(lapply(dims, function(i) i$code))
+			print(datadims)
 			
-			scbData <- scbGetData(var_data()$metadata$URL, dims = var_data()$datadims, clean = TRUE)
+			scbData <- scbGetData(var_data()$metadata$URL, dims = datadims, clean = TRUE)
 			setnames(scbData, names(scbData)[ncol(scbData)], "varde")
-			s_data <- copy(scbData)
-			# Correct for "åäö" in data header
-		
-		return(s_data)
-		
-	})
-	
-	observe({
-		if (is.null(input$fetchScbData)) return()
-		if (input$fetchScbData == 0) return()
-		
-		input$fetchScbData
-# 		print(input$fetchScbData)
-		main_data()
+			
+			return(scbData)
+		})
 	})
 	
 	observe({
@@ -178,43 +169,59 @@ shinyServer(function(input, output) {
 		if (input$fetchScbVar == 0) return()
 		
 		input$fetchScbVar
-# 		print(input$fetchScbVar)
 		var_data()
+	})	
+	
+	observe({
+		if (is.null(input$fetchScbData)) return()
+		if (input$fetchScbData == 0) return()
+		
+		input$fetchScbData
+		main_data()
 	})
 	
 	
+	
 	## Graph (center) ----
+	
 	output$myChart <- renderUI({
-		if (!is.null(input$fetchScbData)) { if (input$fetchScbData > 0) {
-			return(showOutput("rChart", "polycharts"))
-		}} else {
+		if (is.null(input$fetchScbData)) return()
+		if (input$fetchScbData == 0) {
 			return(textOutput("chartText"))
+		} else {
+			return(showOutput("rChart", "nvd3"))
 		}
 	})
 	
 	output$rChart <- renderChart({
-		isolate({
-			p1 <- rPlot("tid", "varde", data = main_data(), color = "variabel", 
-						facets = "region", type = 'line')
-			p1$addParams(dom = 'myChart')
-			p1
-		})
+		plotdata <- main_data()
+		# 		p1 <- rPlot("tid", "varde", data = plotdata, color = "region", 
+		# 					facet = "region", type = 'line')
+		# 		p1$addParams(dom = 'myChart')
+		# 		p1
+		
+		n1 <- nPlot(varde ~ tid, data = plotdata, group = "region", type="multiBarChart", dom = 'rChart')
+		n1
+		
+# 		hair_eye_male <- subset(as.data.frame(HairEyeColor), Sex == "Male")
+# 		n2 <- nPlot(Freq ~ Hair, group = 'Eye', data = hair_eye_male, type = 'multiBarChart', dom = 'rChart')
+# 		n2$chart(color = c('brown', 'blue', '#594c26', 'green'))
+# 		return(n2)
 	})
 	
-	output$chartText <- renderPrint({
+	output$chartText <- renderText({
 		'3. Click the "Get Data" button to display a graph.'
 	})
-		
 	
-# 	output$myChart <- renderPlot({
-# 		if (!is.null(input$fetchScbData)) { if (input$fetchScbData > 0) {
-# 			getData()
-# 			print(s_data)
-# 			
-# 			p <- ggplot(s_data, aes_string(x="tid", y="varde", fill="variabel"
-# 			)) + geom_point()
-# 			print(p)
-# 			
-# 		}}
-# 	})
+	
+	# 	output$myChart <- renderPlot({
+	# 		if (!is.null(input$fetchScbData)) { if (input$fetchScbData > 0) {
+	# 			getData()
+	# 			
+	# 			p <- ggplot(s_data, aes_string(x="tid", y="varde", fill="variabel"
+	# 			)) + geom_point()
+	# 			print(p)
+	# 			
+	# 		}}
+	# 	})
 })
