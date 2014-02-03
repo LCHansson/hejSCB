@@ -1,6 +1,16 @@
 
 shinyUI(fluidPage(
 	title = "hej SCB!",
+	
+	tags$script(
+		type = "text/javascript",
+		"$(function() { // Run when DOM ready
+			$(window).bind('beforeunload', function(e) {
+				Shiny.onInputChange('quit', true); // sets input$quit to true
+			});
+		});"
+	),
+	
 	fluidRow(
 		column(2, uiOutput("UI")),
 		column(2, uiOutput("UI2")),
@@ -12,8 +22,9 @@ shinyUI(fluidPage(
 	hr(),
 	
 	fluidRow(
-		column(2, uiOutput("metaDataSelectors"), uiOutput("dataButton")),
-		column(8, showOutput("myChart", "polycharts")),
+# 		column(2, uiOutput("leftBar")),
+# 		column(8, uiOutput("myChart")),
+# 		column(8, plotOutput("myChart")),
 		column(2)
 	)
 ))
