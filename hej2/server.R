@@ -1,5 +1,5 @@
 
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
 	
 	## Variable selectors (top) ----
 	
