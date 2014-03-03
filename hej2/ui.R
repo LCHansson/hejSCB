@@ -1,5 +1,5 @@
 
-shinyUI(fluidPage(
+shinyUI(fixedPage(
 	title = "hej SCB!",
 	
 	tags$script(
@@ -11,17 +11,21 @@ shinyUI(fluidPage(
 		});"
 	),
 	
-	fluidRow(
+	titlePanel("Hej SCB!"),
+	
+	fixedRow(
+		column(1),
 		column(2, uiOutput("UI")),
 		column(2, uiOutput("UI2")),
 		column(2, uiOutput("UI3")),
 		column(2, uiOutput("UI4")),
-		column(4, uiOutput("goButton"))
+		column(2, uiOutput("goButton")),
+		column(1)
 	),
 	
 	hr(),
 	
-	fluidRow(
+	fixedRow(
 		column(2, uiOutput("leftBar")),
 		column(8, uiOutput("myChart")),
 # 		column(8, plotOutput("myChart")),
