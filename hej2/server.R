@@ -206,7 +206,7 @@ shinyServer(function(input, output, session) {
 		# 		p1$addParams(dom = 'myChart')
 		# 		p1
 		
-		n1 <- nPlot(varde ~ tid, data = plotdata, group = "region", type="multiBarChart", dom = 'rChart')
+		n1 <- nPlot(varde ~ tid, data = plotdata, group = "region", type="lineChart", dom = 'rChart')
 		n1
 		
 # 		hair_eye_male <- subset(as.data.frame(HairEyeColor), Sex == "Male")
