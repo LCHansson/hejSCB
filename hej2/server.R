@@ -1,16 +1,72 @@
 
 shinyServer(function(input, output, session) {
 	
-	## Variable selectors (top) ----
+	
+	
+	## Reactive internals ------------------------------------------------------
+	
+	var_data <- reactive({
+		datavar <- ifelse(
+			input$myInput4 == "",
+			hierarchy[id_lv3 == input$myInput3, URL_lv3],
+			hierarchy[id_lv4 == input$myInput4, URL_lv4]
+		)
+		metadata <- scbGetMetadata(datavar)
+		dims <- scbGetDims(metadata, verbose = FALSE)
+		
+		return(list(datavar=datavar, metadata=metadata, dims=dims))
+	})
+	
+	main_data <- reactive({
+		input$fetchScbData
+		
+		isolate({
+			dims <- var_data()$dims
+			datadims <- lapply(dims, function(i) {
+				if (i$code != "Tid") {
+					return(input[[i$code]])
+				} else {
+					return(as.character(input[[i$code]][1]:input[[i$code]][2]))
+				}
+			})
+			names(datadims) <- unlist(lapply(dims, function(i) i$code))
+			print(datadims)
+			
+			scbData <- scbGetData(var_data()$metadata$URL, dims = datadims, clean = TRUE)
+			setnames(scbData, names(scbData)[ncol(scbData)], "varde")
+			
+			return(scbData)
+		})
+	})
+	
+	observe({
+		if (is.null(input$fetchScbVar)) return()
+		if (input$fetchScbVar == 0) return()
+		
+		input$fetchScbVar
+		var_data()
+	})	
+	
+	observe({
+		if (is.null(input$fetchScbData)) return()
+		if (input$fetchScbData == 0) return()
+		
+		input$fetchScbData
+		main_data()
+	})
+	
+	
+	
+	## Variable selectors (top) ------------------------------------------------
 	
 	output$UI <- renderUI({
-		menudata <- unique(hierarchy[,list(id_lv1, desc_lv1)])
+		menudata <- unique(hierarchy[,list(id_lv1, description_lv1)])
 		list(
 			bootstrapSelectInput(
 				inputId = "myInput",
 				label = "",
 				choices = menudata$id_lv1,
-				subtext = menudata$desc_lv1,
+				subtext = menudata$description_lv1,
 				liveSearch = TRUE,
 				options = list(
 					width="150px"
@@ -20,13 +76,13 @@ shinyServer(function(input, output, session) {
 	})
 	output$UI2 <- renderUI({
 		if (is.null(input$myInput)) return()
-		menudata <- unique(hierarchy[id_lv1 %in% input$myInput, list(id_lv2, desc_lv2)])
+		menudata <- unique(hierarchy[id_lv1 %in% input$myInput, list(id_lv2, description_lv2)])
 		list(
 			bootstrapSelectInput(
 				inputId = "myInput2",
 				label = "",
 				choices = menudata$id_lv2,
-				subtext = menudata$desc_lv2,
+				subtext = menudata$description_lv2,
 				liveSearch = TRUE,
 				options = list(
 					width="150px"
@@ -36,13 +92,13 @@ shinyServer(function(input, output, session) {
 	})
 	output$UI3 <- renderUI({
 		if (is.null(input$myInput2)) return()
-		menudata <- unique(hierarchy[id_lv2 %in% input$myInput2, list(id_lv3, desc_lv3)])
+		menudata <- unique(hierarchy[id_lv2 %in% input$myInput2, list(id_lv3, description_lv3)])
 		list(
 			bootstrapSelectInput(
 				inputId = "myInput3",
 				label = "",
 				choices = menudata$id_lv3,
-				subtext = menudata$desc_lv3,
+				subtext = menudata$description_lv3,
 				liveSearch = TRUE,
 				options = list(
 					width="150px"
@@ -52,13 +108,13 @@ shinyServer(function(input, output, session) {
 	})
 	output$UI4 <- renderUI({
 		if (is.null(input$myInput3)) return()
-		menudata <- unique(hierarchy[id_lv3 %in% input$myInput3, list(id_lv4, desc_lv4)])
+		menudata <- unique(hierarchy[id_lv3 %in% input$myInput3, list(id_lv4, description_lv4)])
 		list(
 			bootstrapSelectInput(
 				inputId = "myInput4",
 				label = "",
 				choices = menudata$id_lv4,
-				subtext = menudata$desc_lv4,
+				subtext = menudata$description_lv4,
 				liveSearch = TRUE,
 				options = list(
 					width="150px"
@@ -73,7 +129,7 @@ shinyServer(function(input, output, session) {
 	
 	
 	
-	## Metadata selectors (left) ----
+	## Metadata selectors (left) -----------------------------------------------
 	
 	output$leftBar <- renderUI({
 		if (is.null(input$fetchScbVar)) return()
@@ -132,57 +188,7 @@ shinyServer(function(input, output, session) {
 	
 	
 	
-	## Data reactives ----
-	
-	var_data <- reactive({
-		datavar <- ifelse(input$myInput4 == "", input$myInput3, input$myInput4)
-		metadata <- scbGetMetadata(datavar)
-		dims <- scbGetDims(metadata, verbose = FALSE)
-		
-		return(list(datavar=datavar, metadata=metadata, dims=dims))
-	})
-	
-	main_data <- reactive({
-		input$fetchScbData
-		
-		isolate({
-			dims <- var_data()$dims
-			datadims <- lapply(dims, function(i) {
-				if (i$code != "Tid") {
-					return(input[[i$code]])
-				} else {
-					return(as.character(input[[i$code]][1]:input[[i$code]][2]))
-				}
-			})
-			names(datadims) <- unlist(lapply(dims, function(i) i$code))
-			print(datadims)
-			
-			scbData <- scbGetData(var_data()$metadata$URL, dims = datadims, clean = TRUE)
-			setnames(scbData, names(scbData)[ncol(scbData)], "varde")
-			
-			return(scbData)
-		})
-	})
-	
-	observe({
-		if (is.null(input$fetchScbVar)) return()
-		if (input$fetchScbVar == 0) return()
-		
-		input$fetchScbVar
-		var_data()
-	})	
-	
-	observe({
-		if (is.null(input$fetchScbData)) return()
-		if (input$fetchScbData == 0) return()
-		
-		input$fetchScbData
-		main_data()
-	})
-	
-	
-	
-	## Graph (center) ----
+	## Graph (center) ----------------------------------------------------------
 	
 	output$myChart <- renderUI({
 		if (is.null(input$fetchScbData)) return()
