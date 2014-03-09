@@ -30,13 +30,20 @@ shinyServer(function(input, output, session) {
 				}
 			})
 			names(datadims) <- unlist(lapply(dims, function(i) i$code))
-			print(datadims)
+# 			print(datadims)
 			
 			scbData <- scbGetData(var_data()$metadata$URL, dims = datadims, clean = TRUE)
 			setnames(scbData, names(scbData)[ncol(scbData)], "varde")
 			
 			return(scbData)
 		})
+	})
+	
+	get_varcode <- reactive({
+		codename <- sapply(var_data()$dims, function(dim) {if(dim$code == input$compareTSVar) return(dim$text) else return(NA) } )
+		codename <- codename[complete.cases(codename)]
+		
+		return(codename)
 	})
 	
 	observe({
@@ -57,7 +64,7 @@ shinyServer(function(input, output, session) {
 	
 	
 	
-	## Variable selectors (top) ------------------------------------------------
+	## Variable selectors (1st row) --------------------------------------------
 	
 	output$UI <- renderUI({
 		menudata <- unique(hierarchy[,list(id_lv1, description_lv1)])
@@ -67,7 +74,6 @@ shinyServer(function(input, output, session) {
 				label = "",
 				choices = menudata$id_lv1,
 				subtext = menudata$description_lv1,
-				liveSearch = TRUE,
 				options = list(
 					width="150px"
 				)
@@ -83,7 +89,7 @@ shinyServer(function(input, output, session) {
 				label = "",
 				choices = menudata$id_lv2,
 				subtext = menudata$description_lv2,
-				liveSearch = TRUE,
+				liveSearch = FALSE,
 				options = list(
 					width="150px"
 				)
@@ -129,9 +135,9 @@ shinyServer(function(input, output, session) {
 	
 	
 	
-	## Metadata selectors (left) -----------------------------------------------
+	## Metadata selectors (2nd row) --------------------------------------------
 	
-	output$leftBar <- renderUI({
+	output$metadataBar <- renderUI({
 		if (is.null(input$fetchScbVar)) return()
 		if (input$fetchScbVar == 0) {
 			uiList <- list(textOutput("leftText"))
@@ -151,73 +157,156 @@ shinyServer(function(input, output, session) {
 	
 	output$metaDataSelectors <- renderUI({
 		dims <- var_data()$dims
+		# Initialization error handling
 		if (is.null(dims)) return()
 		
-		metadataSelectorList <- lapply(dims, function(i) {
+		# Columns should be as wide as they have to be to accomodate all 
+		# metadata selectors. 
+		ncols <- length(dims)
+		colwidth = 2
+		
+		# Create controls
+		metadataSelectorList <- lapply(1:ncols, function(n) {
+			i <- dims[n][[1]]
 			if (i$code != "Tid") {	return(
-				bootstrapSelectInput(
-					inputId = i$code,
-					label = i$code,
-					choices = c(i$values, "*"),
-					subtext = c(i$valueTexts, "*"),
-					selected = i$value[1],
-					multiple = TRUE,
-					options = list(
-						width = "120px"
+				column(
+					colwidth,
+					bootstrapSelectInput(
+						inputId = i$code,
+						label = i$code,
+						choices = c(i$values, "*"),
+						subtext = c(i$valueTexts, "*"),
+						selected = i$values[1],
+						multiple = TRUE,
+						options = list(
+							width = "120px"
+						)
 					)
 				)
 			)} else { return(
-				sliderInput(
-					inputId = i$code,
-					label = i$code,
-					value = c(as.numeric(min(i$values)), as.numeric(max(i$values))),
-					min = as.numeric(min(i$values)),
-					max = as.numeric(max(i$values)),
-					format = "####",
-					step = 1
+				column(
+					colwidth,
+					sliderInput(
+						inputId = i$code,
+						label = i$code,
+						value = c(as.numeric(min(i$values)), as.numeric(max(i$values))),
+						min = as.numeric(min(i$values)),
+						max = as.numeric(max(i$values)),
+						format = "####",
+						step = 1
+					)
 				)
 			)}
 		})
 		
-		return(do.call(tagList, metadataSelectorList))
+		# 		if (ncols < 4)
+		# 			metadataSelectorList <- append(metadataSelectorList, list(column(2*(4 - ncols))))
+		# 		browser()
+		
+		
+		# 		metadataSelectorList <- lapply(dims, function(i) {
+		# 			if (i$code != "Tid") {	return(
+		# 				bootstrapSelectInput(
+		# 					inputId = i$code,
+		# 					label = i$code,
+		# 					choices = c(i$values, "*"),
+		# 					subtext = c(i$valueTexts, "*"),
+		# 					selected = i$value[1],
+		# 					multiple = TRUE,
+		# 					options = list(
+		# 						width = "120px"
+		# 					)
+		# 				)
+		# 			)} else { return(
+		# 				sliderInput(
+		# 					inputId = i$code,
+		# 					label = i$code,
+		# 					value = c(as.numeric(min(i$values)), as.numeric(max(i$values))),
+		# 					min = as.numeric(min(i$values)),
+		# 					max = as.numeric(max(i$values)),
+		# 					format = "####",
+		# 					step = 1
+		# 				)
+		# 			)}
+		# 		})
+		
+		# 		return(do.call(tagList, metadataSelectorList))
 	})
 	
 	output$dataButton <- renderUI({
-		actionButton("fetchScbData", "Get data")
+		column(2, actionButton("fetchScbData", "Get data"))
 	})
 	
 	
 	
 	## Graph (center) ----------------------------------------------------------
 	
-	output$myChart <- renderUI({
+	## Chart container
+	output$scbChart <- renderUI({
 		if (is.null(input$fetchScbData)) return()
 		if (input$fetchScbData == 0) {
 			return(textOutput("chartText"))
 		} else {
-			return(showOutput("rChart", "nvd3"))
+			return(tabsetPanel(
+				tabPanel("Tidsserier", showOutput("timeSeries", "nvd3"), uiOutput("timeSeriesControls")),
+				tabPanel("Ladda hem data"),
+				id = "chartPanel",
+				type = "pills"
+			))
 		}
 	})
 	
-	output$rChart <- renderChart({
+	## Filler text (before the graph is drawn)
+	output$chartText <- renderText({
+		'3. Click the "Get Data" button to display a graph.'
+	})
+	
+	## Time series graph
+	output$timeSeries <- renderChart2({
 		plotdata <- main_data()
 		# 		p1 <- rPlot("tid", "varde", data = plotdata, color = "region", 
 		# 					facet = "region", type = 'line')
 		# 		p1$addParams(dom = 'myChart')
 		# 		p1
 		
-		n1 <- nPlot(varde ~ tid, data = plotdata, group = "region", type="lineChart", dom = 'rChart')
-		n1
+		# 		print(input$compareTSVar)
+		# Find the variable to pivot by
+		codename <- sapply(var_data()$dims, function(dim) {
+			if(dim$code == input$compareTSVar) return(dim$text) else return(NA)
+		})
+		codename <- codename[complete.cases(codename)]
+		codename <- str_replace(codename, "å", "\u00e5")
+		print(codename)
+		# 		browser()
 		
-# 		hair_eye_male <- subset(as.data.frame(HairEyeColor), Sex == "Male")
-# 		n2 <- nPlot(Freq ~ Hair, group = 'Eye', data = hair_eye_male, type = 'multiBarChart', dom = 'rChart')
-# 		n2$chart(color = c('brown', 'blue', '#594c26', 'green'))
-# 		return(n2)
+		# Define and draw graph
+		n1 <- nPlot(varde ~ tid, data = plotdata, group = codename, type="lineChart", dom = 'rChart')
+		n1
 	})
 	
-	output$chartText <- renderText({
-		'3. Click the "Get Data" button to display a graph.'
+	output$timeSeriesControls <- renderUI({
+		dims <- var_data()$dims
+		dimnames <- na.omit(sapply(dims, function(dim) {
+			if (dim$code != "Tid")
+				return(dim$code)
+			else
+				return(NA)
+		}))
+		
+		bootstrapSelectInput(
+			inputId = "compareTSVar",
+			label = "Jämförelsevariabel",
+			choices = dimnames,
+# 			subtext = c(i$valueTexts, "*"),
+			selected = dimnames[1],
+			multiple = FALSE,
+			options = list(
+				width = "120px"
+			)
+		)
 	})
+	
+	
 	
 	
 	# 	output$myChart <- renderPlot({

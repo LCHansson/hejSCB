@@ -1,6 +1,6 @@
 
 shinyUI(fixedPage(
-	title = "hej SCB!",
+	# 	title = "hej SCB!",
 	
 	tags$script(
 		type = "text/javascript",
@@ -26,9 +26,18 @@ shinyUI(fixedPage(
 	hr(),
 	
 	fixedRow(
-		column(2, uiOutput("leftBar")),
-		column(8, uiOutput("myChart")),
+		column(1),
+		# 		column(10, uiOutput("metadataBar")),
+		uiOutput("metadataBar"),
+		column(1)
+	),
+	
+	hr(),
+	
+	fixedRow(
+		column(1),
+		column(10, uiOutput("scbChart")),
 # 		column(8, plotOutput("myChart")),
-		column(2)
+		column(1)
 	)
 ))
