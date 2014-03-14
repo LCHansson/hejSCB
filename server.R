@@ -30,7 +30,6 @@ shinyServer(function(input, output, session) {
 				}
 			})
 			names(datadims) <- unlist(lapply(dims, function(i) i$code))
-# 			print(datadims)
 			
 			scbData <- scbGetData(var_data()$metadata$URL, dims = datadims, clean = TRUE)
 			setnames(scbData, names(scbData)[ncol(scbData)], "varde")
@@ -130,7 +129,7 @@ shinyServer(function(input, output, session) {
 	})
 	
 	output$goButton <- renderUI({
-		actionButton("fetchScbVar", "Get metadata")
+		actionButton2("fetchScbVar", "Get metadata", class = 'btn btn-large btn-block btn-primary action-button')
 	})
 	
 	
@@ -140,11 +139,21 @@ shinyServer(function(input, output, session) {
 	output$metadataBar <- renderUI({
 		if (is.null(input$fetchScbVar)) return()
 		if (input$fetchScbVar == 0) {
-			uiList <- list(textOutput("leftText"))
+			uiList <- list(
+				fixedRow(
+					column(10, offset = 1, textOutput("leftText"))
+				)
+			)
 		} else {
 			uiList <- list(
-				uiOutput("metaDataSelectors"),
-				uiOutput("dataButton")
+				fixedRow(
+					column(1),
+					uiOutput("metaDataSelectors"),
+					column(1)
+				),
+				fixedRow(
+					column(2, offset = 5, uiOutput("dataButton"))
+				)
 			)
 		}
 		
@@ -152,7 +161,7 @@ shinyServer(function(input, output, session) {
 	})
 	
 	output$leftText <- renderText({
-		'2. Select a variable above and click "Get Metadata".'
+		'1. Select a variable above and click "Get Metadata".'
 	})
 	
 	output$metaDataSelectors <- renderUI({
@@ -234,7 +243,7 @@ shinyServer(function(input, output, session) {
 	})
 	
 	output$dataButton <- renderUI({
-		column(2, actionButton("fetchScbData", "Get data"))
+		actionButton2("fetchScbData", "Get data", class = 'btn btn-large btn-block btn-primary action-button')
 	})
 	
 	
@@ -249,16 +258,17 @@ shinyServer(function(input, output, session) {
 		} else {
 			return(tabsetPanel(
 				tabPanel("Tidsserier", showOutput("timeSeries", "nvd3"), uiOutput("timeSeriesControls")),
+				tabPanel("Alternativ"),
 				tabPanel("Ladda hem data"),
-				id = "chartPanel",
-				type = "pills"
+				id = "chartPanel"
+# 				type = "pills"
 			))
 		}
 	})
 	
 	## Filler text (before the graph is drawn)
 	output$chartText <- renderText({
-		'3. Click the "Get Data" button to display a graph.'
+		'2. Click the "Get Data" button to display a graph.'
 	})
 	
 	## Time series graph
@@ -297,7 +307,7 @@ shinyServer(function(input, output, session) {
 			inputId = "compareTSVar",
 			label = "Jämförelsevariabel",
 			choices = dimnames,
-# 			subtext = c(i$valueTexts, "*"),
+			# 			subtext = c(i$valueTexts, "*"),
 			selected = dimnames[1],
 			multiple = FALSE,
 			options = list(

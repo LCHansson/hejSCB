@@ -19,18 +19,17 @@ shinyUI(fixedPage(
 		column(2, uiOutput("UI2")),
 		column(2, uiOutput("UI3")),
 		column(2, uiOutput("UI4")),
-		column(2, uiOutput("goButton")),
 		column(1)
+	),
+	
+	fixedRow(
+		column(2, offset=5, uiOutput("goButton"))
 	),
 	
 	hr(),
 	
-	fixedRow(
-		column(1),
-		# 		column(10, uiOutput("metadataBar")),
-		uiOutput("metadataBar"),
-		column(1)
-	),
+	# 		column(10, uiOutput("metadataBar")),
+	uiOutput("metadataBar"),
 	
 	hr(),
 	
