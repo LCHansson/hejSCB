@@ -1,3 +1,6 @@
+# R session files
+.RData
+
 # History files
 .Rhistory
 
@@ -5,3 +8,6 @@
 *-Ex.R
 .Rproj.user
 *.data
+
+# OSX files
+*.DS_Store

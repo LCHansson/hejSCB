@@ -6,4 +6,4 @@ library(rCharts)
 library(sweSCB)
 library(stringr)
 
-load("../data/hierarchy.RData")
+load("data/hierarchy.RData")
