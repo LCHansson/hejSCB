@@ -1,5 +1,5 @@
-library(data.table)
 library(shiny)
+library(data.table)
 library(sparkle)
 library(ggplot2)
 library(rCharts)
